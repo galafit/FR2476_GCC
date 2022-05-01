@@ -57,7 +57,7 @@
  * **********************************************************************
  * RX - RECEIVE
  * TX - TRANSMIT
- *************************************************************************/
+ ************************************************************************/
 
 #define UART_RX_BUFFER  UCA0RXBUF //uart receive buffer
 #define UART_TX_BUFFER  UCA0TXBUF //uart transmit buffer
@@ -186,7 +186,7 @@ __attribute__((interrupt(USCI_A0_VECTOR)))
 void USCI_A0_ISR(void){
     uchar ch;
     uint next_head;
-    switch(__even_in_range (UCA0IV, 18)){       //this intrinsic tells the compiler to omit odd checks, so the code is faster
+    switch(__even_in_range (UCA0IV, 18)){  //this intrinsic tells the compiler to omit odd checks, so the code is faster
         //Rx routine
         case 0x02:
             // Прочитать символ из буфера-приемника

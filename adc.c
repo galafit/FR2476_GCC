@@ -39,7 +39,7 @@ void adc_init(){
   ADCCTL0 |= ADCMSC;                             //sample and hold = 4clk, multiple conversion
   ADCCTL1 |= (ADCSHP + ADCSSEL_2 + ADCDIV_2);    //TIMER Conversion is triggered manually, ADC clock source - SMCLK/3, single channel single conversion
   ADCCTL2 |= ADCRES_2;                           //12 bit resolution
-//  ADCMCTL0 |= (ADCSREF_1 + adc_channels[adc_index]);           //Employing the internal reference, start conversion from the first channel in the list
+//  ADCMCTL0 |= (ADCSREF_1 + adc_channels[adc_index]); //Employing the internal reference, start conversion from the first channel in the list
   ADCMCTL0 |= (ADCSREF_3 + adc_channels[adc_index]);
   ADCIE |= ADCIE0;                               //Activate interrupt
   ADCCTL0 |= (ADCON);
@@ -86,7 +86,6 @@ unsigned char* adc_get_data(){
     adc_sum_cnt = 0; //Marking that the adc batch is prepared and we are ready for the next conversion
     return data;
 }
-
 
 __attribute__((interrupt(ADC_VECTOR)))
 void ADC_ISR(void){

@@ -13,14 +13,9 @@
 /**======================== Формат данных ======================
 Универсальный упаковщик и для 2х канальной адс и для 8 канальной
 
-Каждый пакет содержит 10 измерений от ADS
-+ 1 измерение акселерометра по трем осям - X, Y, Z
-+ 1 измерение батарейки
-
+Каждый пакет содержит 10 измерений от ADS + 1 измерение акселерометра по трем осям - X, Y, Z  + 1 измерение батарейки
 Каждый sample данных ADS занимает 3 байта.
-Каждый sample данных от акселерометра занимает 2 байта
-(то есть данные одного измерения от акселерометра по трем осям это 6 байт).
-
+Каждый sample данных от акселерометра занимает 2 байта (то есть данные одного измерения от акселерометра по трем осям это 6 байт).
 Данные имеют следующий вид:
  n_0 samples from ads_channel_0 (n_0 * 3 bytes)//if this ads channel enabled
  n_1 samples from ads_channel_1 (n_1 * 3 bytes)//if this ads channel enabled)
@@ -40,7 +35,6 @@
 START_MARKER|START_MARKER|номер пакета(2bytes)|данные . . .|STOP_MARKER
 
  =========================================================**/
-
 
 #define ADS_NUMBER_OF_CHANNELS 2
 #define ADS_NUMBER_OF_MESURING 10 // 10 измерений на пакет
@@ -75,7 +69,6 @@ static unsigned char channel_pointers[ADS_NUMBER_OF_CHANNELS] = {0};
 static unsigned char channel_starts[ADS_NUMBER_OF_CHANNELS];
 static unsigned char ads_mesuring_count;
 
-
 static void set_batch_size(){
     batch_size = BATCH_HEADER_SIZE + BATCH_TAIL_SIZE + ACC_ADC_DATA_SIZE;
     unsigned char channel;
@@ -91,8 +84,8 @@ static void set_batch_size(){
 }
 
 void databatch_init(bool adc_available1, bool acc_available1) {
-    adc_available = adc_available1;
-    acc_available = acc_available1;
+    adc_available = adc_available1; //
+    acc_available = acc_available1; // ### Зачем эти промежуточные переменные?
     ads_init();
     if(adc_available) {
         adc_init();
@@ -168,11 +161,11 @@ static void make_batch(){
         fill_buffer[batch_size - 4] = 0;
     } else {
         fill_buffer[batch_size - 9] = 0;
-         fill_buffer[batch_size - 8] = 0;
-         fill_buffer[batch_size - 7] = 0;
-         fill_buffer[batch_size - 6] = 0;
-         fill_buffer[batch_size - 5] = 0;
-         fill_buffer[batch_size - 4] = 0;
+        fill_buffer[batch_size - 8] = 0;
+        fill_buffer[batch_size - 7] = 0;
+        fill_buffer[batch_size - 6] = 0;
+        fill_buffer[batch_size - 5] = 0;
+        fill_buffer[batch_size - 4] = 0;
     }
     //Adding battery info
     //TODO think how to do it!!!
@@ -195,16 +188,19 @@ static void make_batch(){
     uart_flush(); // ждем завершения отправки по uart
     if(is_recording) {
         //send data to uart
-        uart_transmit(display_buffer, batch_size);
 //        LED1_ON(); // дергаем пин P1.0 для запуска лог.анализатора
 //        __delay_cycles(32);
 //        LED1_OFF();
+        uart_transmit(display_buffer, batch_size);
     }
 }
 
+#define ADS_HALF_BATCH_SIZE ADS_BATCH_SIZE/2
+static int sample_pointer = 0;
 
 /*
  * Метод помещает в пакет данные от 10 измерений ADS (ADS_NUMBER_OF_MESURING)
+ * в случае когда каналы имеют делители отличные от 1
  */
 #define LONG_MAX 2147483647
 #define LONG_MIN 2147483648
@@ -212,10 +208,8 @@ static long accumulator[ADS_NUMBER_OF_CHANNELS] = {0};
 static unsigned char accum_counter[ADS_NUMBER_OF_CHANNELS] = {0}; // все элементы массива будут инициализированы 0;
 long avg_value;
 long ads_value;
-uchar* ptr_ads_value = &ads_value;
-uchar* ptr_avg_value = &avg_value;
-int i = 0;
-long uart_value;
+char* ptr_ads_value = (char*)&ads_value;
+char* ptr_avg_value = (char*)&avg_value;
 static void process_ads_samples(uchar* ads_samples){
     uchar* ads_buffer = fill_buffer + BATCH_HEADER_SIZE;
     signed char signed_byte;
@@ -223,13 +217,11 @@ static void process_ads_samples(uchar* ads_samples){
     uchar chn_pointer;
 
     for(channel = 0; channel < ADS_NUMBER_OF_CHANNELS; channel++) {
-        signed_byte = (signed char)*ads_samples; // старший байт определяет знак числа
+
         // MSP is little endian !!! MSP is little endian
-        if(signed_byte < 0) {
-            ptr_ads_value[3] = 0xFF;
-        }else{
-            ptr_ads_value[3] = 0;
-        }
+        signed_byte = (signed char)*ads_samples; // старший байт определяет знак числа
+        ptr_ads_value[3] = 0;
+        if(signed_byte&BIT7) { ptr_ads_value[3] = 0xFF; }
 
         ptr_ads_value[2] = *ads_samples++;
         ptr_ads_value[1] = *ads_samples++;
@@ -275,7 +267,6 @@ static void process_ads_samples(uchar* ads_samples){
          }
     }
 }
-
 
 void databatch_process() {
     if(ads_data_received()) {

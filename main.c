@@ -10,7 +10,7 @@
 #include "bluetooth.h"
 #include "acc.h"
 
-static bool acc_available = true;
+static bool acc_available = false;
 static bool adc_available = true;
 
 
@@ -28,7 +28,7 @@ int main(void) {
     while(1){
         while (interrupt_flag) {
             interrupt_flag = false;
-            acc_handle_interrupt();
+//            acc_handle_interrupt();
             commands_process();
             databatch_process();
         }

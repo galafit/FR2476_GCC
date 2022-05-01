@@ -128,7 +128,7 @@ void ads_init() {  // !!!! Надо все перепроверить
     //Ads in reset state and stopped
     P4OUT &= ~(RESET_BIT); //  may be it is not needed. Read datasheet?
     //DRDY pin is input, sensitive to high-to-low transition
-    P3SEL1 &= ~DRDY_BIT;
+    P3SEL1 &= ~DRDY_BIT;  // P3.7 DRDY
     P3SEL0 &= ~DRDY_BIT;
     P3REN &= ~DRDY_BIT;
     P3IES |= DRDY_BIT;  //When interrupt is on, it will happen on high-to-low edge transition
@@ -145,7 +145,6 @@ void ads_init() {  // !!!! Надо все перепроверить
     DELAY_320();
   //  ads_test_config();
 }
-
 
 /**
  * Чтение одного регистра. Возращает прочитанное значение
@@ -216,11 +215,8 @@ uchar* ads_get_data() {
 }
 
 // отправляет тестовые данные
-//uchar test_data[6] = {0x02, 0x04, 0x08,  0x02, 0x04, 0x08};
-//uchar test_data[6] = {0x01, 0x01, 0x01,  0xFE, 0xFE, 0xFE};
-//uchar test_data[6] = {0x4F, 0xFF, 0xFF,  0x4F, 0xFF, 0xFF};
-uchar test_data[6] = {0xFF, 0xA9, 0x84,  0xFF, 0xA9, 0x84};
-uchar* ads_get_data1() {
+uchar test_data[6] = { 0xA9, 0x06, 0x60, 0xA9, 0x06, 0x60};
+uchar* ads_get_data_t() {
     data_received = false;
     return test_data;
 }
@@ -246,6 +242,9 @@ void PORT3_ISR(void){
     if (ADS_DRDY_FLAG_SET) { //if interrupt from DRDY
         data_ready = true; // выставляем флаг
         ADS_DRDY_FLAG_CLEAR();
+//        LED1_ON(); // дергаем пин P1.0 для запуска лог.анализатора
+//        __delay_cycles(32);
+//        LED1_OFF();
     }
     interrupt_flag = true;
     __low_power_mode_off_on_exit(); // Выходим из спячки в main loop
