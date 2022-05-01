@@ -1,9 +1,10 @@
+#include <spi1.h>
 #include <stdbool.h>
 #include "utypes.h"
 #include "uart.h"
-#include "spi.h"
 #include "ads1292.h"
 #include "databatch.h"
+#include "leds.h"
 
 #define FRAME_START  0xAA
 #define FRAME_STOP 0x55
@@ -90,6 +91,7 @@ static uchar ads_dividers[ADS_MAX_NUMBER_OF_SIGNALS];
 
 // TODO PING
 static void do_command(uchar *command) {
+    uchar number_of_signals = 2;
     uchar command_marker = command[3];
     /************** PROCESSOR REGISTERS *******************/
     // Processor register address is 2 bytes. Must be send in little endian order
@@ -118,20 +120,18 @@ static void do_command(uchar *command) {
     }
         /************** MACRO COMMANDS *******************/
     else if (command_marker == ADS_START_RECORDING) {
-        uchar number_of_signals = ads_number_of_signals();
         for (int i = 0; i < number_of_signals; ++i) {
             ads_dividers[i] = command[4 + i];
         }
-        databatch_start(ads_dividers);
-        ads_start_recording();
+        databatch_start_recording(ads_dividers);
     } else if (command_marker == ADS_STOP_RECORDING) {
-        ads_stop_recording();
+        databatch_stop_recording();
     } else if (command_marker == HELLO_REQUEST) {
         uart_flush(); // ждем завершения отправки по uart
         uart_transmit(message_hello, MSG_HELLO_SIZE);
     } else if (command_marker == HARDWARE_REQUEST) {
         // предпоследний байт содержит информацию о числе каналов ADS (2 или 8)
-        message_hardware[MSG_HARDWARE_SIZE - 2] = ads_number_of_signals();
+        message_hardware[MSG_HARDWARE_SIZE - 2] = number_of_signals;
         uart_flush(); // ждем завершения отправки по uart
         uart_transmit(message_hardware, MSG_HARDWARE_SIZE);
     } else if (command_marker == COMMAND_CONFIRMED) {

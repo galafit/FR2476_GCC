@@ -65,7 +65,27 @@ static uint data_display[DATA_SIZE_INT]; // actually triple buffer
 
 static volatile bool acc_interrupt_flag;
 
+static void acc_write_command(uchar* data, int data_size) {
+    ACC_SELECT();
+    while(data_size > 0){
+        spi0_transfer(*data++);
+        data_size--;
+    }
+    ACC_DESELECT();
+}
+
+// читает data_size байт в read_buffer начиная с адреса start_address
+static void acc_read_registers(uchar start_address, uchar* read_buffer, int data_size) {
+    ACC_SELECT();
+    //Посылаем адрес первого регистра данных
+    spi0_transfer(start_address);
+    //Теперь остальные регистры прочитаются автоматически
+    spi0_read((unsigned char *)read_buffer, data_size);
+    ACC_DESELECT();
+}
+
 void acc_init(){
+    spi0_init();
     //ACC пины: 2.2 - INT1, 2.7 - INT2, CS - 3.1
     //Инициализируем пин CS
     P3DIR |= ACC_CS;
@@ -73,20 +93,20 @@ void acc_init(){
     //Стартуем акселерометр
     //Включаем питание
     wait(16000);
-    P5REN &= ~BIT0;
-    P5DIR |= BIT0;
-    P5OUT |= BIT0;
+    P2REN &= ~BIT4;
+    P2DIR |= BIT4;
+    P2OUT |= BIT4;
     wait(16000);
     //Делаем Reset
-    spi0_transmit(acc2_reset, 2);
+    acc_write_command(acc2_reset, 2);
     wait(1000);
     //spi0_transmit(acc2_reset2, 2);
     //wait(1000);
-    spi0_transmit(acc2_SPI_speed, 2);
-    spi0_transmit(acc2_int1, 2);
-    spi0_transmit(acc2_power, 2);
-    spi0_transmit(acc2_who, 2);
-    spi0_transmit(acc2_who, 2);
+    acc_write_command(acc2_SPI_speed, 2);
+    acc_write_command(acc2_int1, 2);
+    acc_write_command(acc2_power, 2);
+    acc_write_command(acc2_who, 2);
+    acc_write_command(acc2_who, 2);
     //Инициализируем пины для чтения прерываний от акселерометра
     P2SEL1 &= ~(INT1 + INT2);
     P2SEL0 &= ~(INT1 + INT2);
@@ -97,47 +117,7 @@ void acc_init(){
     data_size_int = 3;
     acc_data_address[0] = 0xA8;     //Адрес первого регистра данных
 }
-/*
-//ACC with GYR
-void acc_init(){
-//ACC interrupt pins: 2.2 - INT1, 2.7 - INT2, CS - 3.1
-    //Setting up the select pin for ACC
-    P3DIR |= ACC_CS;
-    P3REN &= ~ACC_CS;
 
-    //temporary power pin
-    wait(16000);
-    P5REN &= ~BIT0;
-    P5DIR |= BIT0;
-    P5OUT |= BIT0;
-    wait(16000);
-
-    //Startup
-    //reset
-    spi0_transmit(acc_reboot_int1, 2);
-    spi0_transmit(acc_reboot_int2, 2);
-    spi0_transmit(acc_reboot_acc, 2);
-    spi0_transmit(acc_reboot_gyr, 2);
-    spi0_transmit(acc_reboot_reset, 2);
-    //start
-    spi0_transmit(acc_startup_int1, 2);
-    //spi0_transmit(acc_startup_int2, 2);
-    spi0_transmit(acc_startup_acc, 2);
-    spi0_transmit(acc_startup_gyr, 2);
-    spi0_transmit(acc_startup_rounding, 2);
-    spi0_transmit(acc_startup_bdu, 2);
-    spi0_transmit(acc_startup_drdy_mask, 2);
-    //Interrput pins setup
-    P2SEL1 &= ~(INT1 + INT2);
-    P2SEL0 &= ~(INT1 + INT2);
-    P2REN &= ~(INT1 + INT2);
-    P2IES &= ~(INT1 + INT2);  //When interrupt is on, it will happen on low-to-high edge transition
-    P2DIR &= ~(INT1 + INT2);
-    data_size_char = 12;      //6 bytes GYR + 6 bytes ACC
-    data_size_int = 6;
-    acc_data_address[0] = 0xA2;    //Address of the first data register of acc & gyr
-}
-*/
 void acc_stop_reading(){
     P2IE &= ~(INT1 /*+ INT2*/);         //Выключаем прерывание когда у акселерометра готовы данные
 }
@@ -172,10 +152,7 @@ void acc_read(){
 void acc_handle_interrupt() {
     if(acc_interrupt_flag) {
         acc_interrupt_flag = false;
-        //Посылаем адрес первого регистра данных
-        spi0_exchange(acc_data_address[0]);
-        //Теперь остальные регистры прочитаются автоматически
-        spi0_read1((unsigned char *)double_buffer1, data_size_char);
+        acc_read_registers(acc_data_address[0], (unsigned char *)double_buffer1, data_size_char);
         for(int i = 0; i < DATA_SIZE_LONG; i++){
             //Количество сэмплов в пакете <= 23, но здесь ограничиваем 16ю
             if(*current_sample_counter <= 16){

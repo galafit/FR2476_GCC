@@ -59,20 +59,20 @@
  * TX - TRANSMIT
  *************************************************************************/
 
-#define UART_RX_BUFFER  UCA1RXBUF //uart receive buffer
-#define UART_TX_BUFFER  UCA1TXBUF //uart transmit buffer
+#define UART_RX_BUFFER  UCA0RXBUF //uart receive buffer
+#define UART_TX_BUFFER  UCA0TXBUF //uart transmit buffer
 
 // флаг выставляется когда символ приходит в буфер приемник (RXBUF)
-#define UART_RX_FLAG_SET  (UCA1IFG & UCRXIFG)
+#define UART_RX_FLAG_SET  (UCA0IFG & UCRXIFG)
 
 // флаг выставляется
 // 1) когда символ из буфера передачи (TXBUF) перебрасываются в сдвиговый регистр и TXBUF становится свободным для записи
 // 2) after a PUC or when UCSWRST = 1
-#define UART_TX_FLAG_SET  (UCA1IFG & UCTXIFG)
+#define UART_TX_FLAG_SET  (UCA0IFG & UCTXIFG)
 
-#define UART_RX_INTERRUPT_ENABLE()  (UCA1IE |= UCRXIE)
-#define UART_TX_INTERRUPT_ENABLE()  (UCA1IE |= UCTXIE)
-#define UART_TX_INTERRUPT_DISABLE() (UCA1IE &= ~UCTXIE)
+#define UART_RX_INTERRUPT_ENABLE()  (UCA0IE |= UCRXIE)
+#define UART_TX_INTERRUPT_ENABLE()  (UCA0IE |= UCTXIE)
+#define UART_TX_INTERRUPT_DISABLE() (UCA0IE &= ~UCTXIE)
 
 /*------------ UART receive circular fifo buffer ------------*/
 #define UART_RX_FIFO_BUFFER_SIZE 32
@@ -89,21 +89,21 @@ void uart_init() {
     // DEFAULT: parity disabled - LSB - 8bit data - one stop bit - UART mode - Asynchoronous mode (page 577)
     // As said in 22.3.1 of the Holy User Guide,
     // before initialization of USCI we must reset it.
-    UCA1CTL1 |= UCSWRST;          //stopping uart
-    UCA1CTL1 |= UCSSEL_2;         //uart clock source - SMCLK
+    UCA0CTL1 |= UCSWRST;          //stopping uart
+    UCA0CTL1 |= UCSSEL_2;         //uart clock source - SMCLK
     //***setting the baud rate***
-    UCA1BR1 = 0x00;
-    UCA1BR0 = 0x02;
+    UCA0BR1 = 0x00;
+    UCA0BR0 = 0x02;
 
-    UCA1MCTLW |= UCOS16;          //0th bit is set for high-speed clock source (SMCLK)
-    UCA1MCTLW |= (3<<4);          //Second modulation stage
-    UCA1MCTLW |= (0xAA<<8);       //First modulation stage
-    //Setting pins (2.5-RX, 2.6-TX)
-    P2REN &= ~(BIT5 + BIT6);
-    P2DIR &= ~(BIT5);
-    P5DIR |= BIT6;
-    P2SEL0 |= (BIT5 + BIT6);
-    UCA1CTL1 &= ~UCSWRST;         //releasing uart  *Initialize USCI state machine*
+    UCA0MCTLW |= UCOS16;          //0th bit is set for high-speed clock source (SMCLK)
+    UCA0MCTLW |= (3<<4);          //Second modulation stage
+    UCA0MCTLW |= (0xAA<<8);       //First modulation stage
+    //Setting pins (1.5-RX, 1.4-TX)
+    P1REN &= ~(BIT5 + BIT4);
+    P1DIR &= ~(BIT5);
+    //P5DIR |= BIT4;
+    P1SEL0 |= (BIT5 + BIT4);
+    UCA0CTL1 &= ~UCSWRST;         //releasing uart  *Initialize USCI state machine*
 
     /*---------------- Interrupts ------------------*/
     UART_RX_INTERRUPT_ENABLE();
@@ -120,7 +120,7 @@ void uart_init() {
 void uart_transmit(uchar* data, int data_size) {
     uart_tx_data = data;
     uart_tx_data_size = data_size;
-    UCA1IFG |= UCTXIFG;         //Triggering Tx interrupt flag
+    UCA0IFG |= UCTXIFG;         //Triggering Tx interrupt flag
     UART_TX_INTERRUPT_ENABLE();
 }
 
@@ -182,11 +182,11 @@ bool uart_read(uchar* chp) {
 }
 
 //***Combined UART Rx/Tx interrupt vector***
-__attribute__((interrupt(USCI_A1_VECTOR)))
-void USCI_A1_ISR(void){
+__attribute__((interrupt(USCI_A0_VECTOR)))
+void USCI_A0_ISR(void){
     uchar ch;
     uint next_head;
-    switch(__even_in_range (UCA1IV, 18)){       //this intrinsic tells the compiler to omit odd checks, so the code is faster
+    switch(__even_in_range (UCA0IV, 18)){       //this intrinsic tells the compiler to omit odd checks, so the code is faster
         //Rx routine
         case 0x02:
             // Прочитать символ из буфера-приемника

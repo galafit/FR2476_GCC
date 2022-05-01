@@ -3,19 +3,17 @@
 
 #include "msp430fr2476.h"
 
-#define LED_INIT() P1DIR |= BIT0; P1OUT &= ~BIT0;
-#define LED_ON()  (P1OUT |= BIT0)
-#define LED_OFF()  (P1OUT &= ~BIT0)
+#define LEDS_INIT() P5REN &= ~(BIT0+BIT1); P4REN &= ~BIT7; P5DIR |= (BIT0+BIT1); P4DIR |= BIT7; P5OUT &= ~(BIT0+BIT1); P4OUT &= ~BIT7
 
-#define LED1_ON()  (P1OUT |= BIT5)
-#define LED2_ON()  (P1OUT |= BIT6)
-#define LED3_ON()  (P1OUT |= BIT7)
-#define LED1_OFF()  (P1OUT &= ~BIT5)
-#define LED2_OFF()  (P1OUT &= ~BIT5)
-#define LED3_OFF()  (P1OUT &= ~BIT7)
-#define LED1_SWITCH()  (P1OUT ^= BIT5)
-#define LED2_SWITCH()  (P1OUT ^= BIT6)
-#define LED3_SWITCH()  (P1OUT ^= BIT7)
+#define LED1_ON()  P5OUT |= BIT0
+#define LED2_ON()  P5OUT |= BIT1
+#define LED3_ON()  P4OUT |= BIT7
+#define LED1_OFF()  P5OUT &= ~BIT0
+#define LED2_OFF()  P5OUT &= ~BIT1
+#define LED3_OFF()  P4OUT &= ~BIT7
+#define LED1_SWITCH()  P5OUT ^= BIT0
+#define LED2_SWITCH()  P5OUT ^= BIT1
+#define LED3_SWITCH()  P4OUT ^= BIT7
 
 
 #endif //LEDS_H

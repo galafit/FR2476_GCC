@@ -69,8 +69,8 @@ void bt_program(){
 }
 
 void bluetooth_init(){
-  unsigned char UCA1BRW_prev;
-  unsigned char UCA1MCTLW_prev;
+  unsigned char UCA0BRW_prev;
+  unsigned char UCA0MCTLW_prev;
   //Pin 2.3 - BT_PROG, 4.0 - BT_RESET
   P2OUT &= ~BT_PROG;
   P2SEL0 &= ~BT_PROG;
@@ -85,15 +85,15 @@ void bluetooth_init(){
   //Запускаем модуль в режиме АТ команд
   //Сохраняем предыдущие настройки уарта и задаем скорость в 38400
   INTERRUPTS_DISABLE();
-  UCA1CTLW0 |= UCSWRST;                   //Останавливаем уарт
-  UCA1BRW_prev = UCA1BRW;
-  UCA1BRW = 26;
-  UCA1MCTLW_prev = UCA1MCTLW;
-  UCA1MCTLW = 0x00;
-  UCA1MCTLW |= (UCOS16 + (0xB6<<8) + (10<<4));
-  UCA1STATW = 0x00;                    //Обнуляем регистр статума
-  UCA1CTLW0 &= ~(UCSWRST);             //Запускаем уарт
-  UCA1IE |= UCRXIE;                    //Устанавливаем прерывание на входящие данные
+  UCA0CTLW0 |= UCSWRST;                   //Останавливаем уарт
+  UCA0BRW_prev = UCA0BRW;
+  UCA0BRW = 26;
+  UCA0MCTLW_prev = UCA0MCTLW;
+  UCA0MCTLW = 0x00;
+  UCA0MCTLW |= (UCOS16 + (0xB6<<8) + (10<<4));
+  UCA0STATW = 0x00;                    //Обнуляем регистр статума
+  UCA0CTLW0 &= ~(UCSWRST);             //Запускаем уарт
+  UCA0IE |= UCRXIE;                    //Устанавливаем прерывание на входящие данные
   INTERRUPTS_ENABLE();
   //Starting BT
   BT_PROG_OFF();
@@ -127,12 +127,12 @@ void bluetooth_init(){
   }
   //Восстанавливаем настройки уарта
   INTERRUPTS_DISABLE();
-  UCA1CTLW0 |= UCSWRST;                //stopping uart
-  UCA1BRW = UCA1BRW_prev;
-  UCA1MCTLW = UCA1MCTLW_prev;
-  UCA1STATW = 0x00;                    //resetting the status register
-  UCA1CTLW0 &= ~(UCSWRST);             //releasing uart
-  UCA1IE |= UCRXIE;                    //setting input interrupt
+  UCA0CTLW0 |= UCSWRST;                //stopping uart
+  UCA0BRW = UCA0BRW_prev;
+  UCA0MCTLW = UCA0MCTLW_prev;
+  UCA0STATW = 0x00;                    //resetting the status register
+  UCA0CTLW0 &= ~(UCSWRST);             //releasing uart
+  UCA0IE |= UCRXIE;                    //setting input interrupt
   INTERRUPTS_ENABLE();
   //Отключаем у модуля режим АТ команд и стартуем его в обычном режиме
   BT_OFF();
